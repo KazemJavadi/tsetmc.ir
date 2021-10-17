@@ -1,15 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace tsetmc.ir.Models
+namespace TseTmc.IR.Model
 {
-    internal class PersonOrg
+    public class PersonOrg
     {
         //Date of data
-        public string PersianDate { get; set; }
+        public DateTime PersianDate { get; set; }
 
         //Org - Buy
         //خرید حقوقی
