@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace TseTmc.IR.Model
+namespace IranTsetmc.Model
 {
     public class PersonOrg
     {

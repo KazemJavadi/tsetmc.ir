@@ -5,7 +5,7 @@ using System.Linq;
 using System.Net;
 using TseTmc.IR.Model;
 
-namespace Tsetmc.IR
+namespace IranTsetmc
 {
     public class Tsetmc
     {
