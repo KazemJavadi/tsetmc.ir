@@ -7,7 +7,7 @@ namespace ConsoleTest
     {
         static void Main(string[] args)
         {
-            var result = Tsetmc.GetHoldersData("فملی");
+            var result = Tsetmc.GetHoldersInfo("فملی");
             ReadLine();
         }
     }

@@ -57,6 +57,11 @@ namespace IranTsetmc
             return null;
         }
 
+        /// <summary>
+        /// داده های (اطلاعات) خرید و فروش حقیقی و حقوقی سهم
+        /// </summary>
+        /// <param name="symbolName"></param>
+        /// <returns></returns>
         public static List<PersonOrg> GetPersonOrgHistory(string symbolName)
         {
             string tsetmcSymbolId = CheckSymbolNameValidityAndGetTsetmcId(symbolName);
@@ -68,46 +73,15 @@ namespace IranTsetmc
 
             if (result == string.Empty) return new();
 
-            string[] daysData = result.Split(";");
-
-            List<PersonOrg> personOrgHistory = new();
-            foreach (string dayData in daysData)
-            {
-                string[] dayDataUnits = dayData.Split(',');
-                PersonOrg rploh = new();
-                //date
-                //date
-                int year = int.Parse(dayDataUnits[0].Substring(0, 4));
-                int month = int.Parse(dayDataUnits[0].Substring(4, 2));
-                int day = int.Parse(dayDataUnits[0].Substring(6, 2));
-                rploh.Date = new DateTime(year, month, day);
-
-                //person/org - sell/buy - count
-                rploh.NumberOfOrgBuyers = long.Parse(dayDataUnits[1]);
-                rploh.NumberOfPersonBuyers = long.Parse(dayDataUnits[2]);
-                rploh.NumberOfPersonSellers = long.Parse(dayDataUnits[3]);
-                rploh.NumberOfOrgSellers = long.Parse(dayDataUnits[4]);
-
-                //person/org - sell/buy - volume
-                rploh.PersonBuyTotalVolume = long.Parse(dayDataUnits[5]);
-                rploh.OrgBuyTotalVolume = long.Parse(dayDataUnits[6]);
-                rploh.PersonSellTotalVolume = long.Parse(dayDataUnits[7]);
-                rploh.OrgSellTotalVolume = long.Parse(dayDataUnits[8]);
-
-                //person/org - sell/buy - total price
-                rploh.PersonBuyTotalPrice = decimal.Parse(dayDataUnits[9]);
-                rploh.OrgBuyTotalPrice = decimal.Parse(dayDataUnits[10]);
-                rploh.PersonSellTotalPrice = decimal.Parse(dayDataUnits[11]);
-                rploh.OrgSellTotalPrice = decimal.Parse(dayDataUnits[12]);
-
-                personOrgHistory.Add(rploh);
-            }
-
-            return personOrgHistory.CleanPersonOrgHistory();
+            return result.ToListOfPersonOrgHistory().CleanPersonOrgHistory();
         }
 
 
-
+        /// <summary>
+        /// داده های (اطلاعات) شناسه ی نماد
+        /// </summary>
+        /// <param name="symbolName"></param>
+        /// <returns></returns>
         public static ShareIdInfo GetShareIdInfo(string symbolName)
         {
             string tsetmcSymbolId = CheckSymbolNameValidityAndGetTsetmcId(symbolName);
@@ -116,29 +90,26 @@ namespace IranTsetmc
             string html = GetRequestResult(url);
             HtmlDocument doc = new();
             doc.LoadHtml(html);
-            var items = doc.DocumentNode
+            var shareIdInfoItems = doc.DocumentNode
                 .SelectSingleNode("/html/body/div[4]/form/span/div/div[2]/table/tbody")
                 .ChildNodes.Where(n => n.Name != "#text")
                 .Select(n => n.ChildNodes.Where(cn => cn.Name != "#text").ToList()[1].InnerText.Trim()).ToArray();
-            List<HtmlNode> myNodes = new();
 
-            return new ShareIdInfo
-            {
-                SymbolCode12Digit = items[0],
-                SymbolCode5Digit = items[1],
-                LatinNameOfTheCompany = items[2],
-                CompanyCode4Digit = items[3],
-                CompanyName = items[4],
-                PersianSymbol = items[5],
-                PersianSymbol30Digit = items[6],
-                CompanyCode12Digit = items[7],
-                Bazaar = items[8],
-                BoardCode = items[9],
-                IndustryGroupCode = items[10],
-                IndustryGroup = items[11],
-                IndustrySubGroupCode = items[12],
-                IndustrySubGroup = items[13]
-            };
+            return shareIdInfoItems.ToShareIdInfo();
+        }
+
+        public static string GetHoldersInfo(string symbolName)
+        {
+            ShareIdInfo shareIdInfo = GetShareIdInfo(symbolName);
+            string url = $@"http://tsetmc.ir/Loader.aspx?Partree=15131T&c={shareIdInfo.CompanyCode12Digit}";
+            string html = GetRequestResult(url);
+            HtmlDocument doc = new();
+            doc.LoadHtml(html);
+            var shareIdInfoItems = doc.DocumentNode
+            .SelectSingleNode("/html/body/div[4]/form/span/div/div[2]/table/tbody")
+            .ChildNodes.Where(n => n.Name != "#text")
+            .Select(n => n.ChildNodes.Where(cn => cn.Name != "#text").ToList()[1].InnerText.Trim()).ToArray();
+            throw new NotImplementedException();
         }
     }
 }
