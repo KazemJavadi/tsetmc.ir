@@ -5,7 +5,7 @@ namespace IranTsetmc.Model
     public class PersonOrg
     {
         //Date of data
-        public DateTime PersianDate { get; set; }
+        public DateTime Date { get; set; }
 
         //Org - Buy
         //خرید حقوقی
@@ -37,6 +37,6 @@ namespace IranTsetmc.Model
 
         //Org to Person ownership change
         //تغییر مالکیت از حقوقی به حقیقی
-        public long OwnershipChangeFromOrgToPerson { get; set; }
+        public long OwnershipChangeFromOrgToPerson => OrgSellTotalVolume - OrgBuyTotalVolume;
     }
 }

@@ -1,9 +1,11 @@
-﻿using System;
+﻿using HtmlAgilityPack;
+using IranTsetmc.Model;
+using IranTsetmc.Extensions;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
-using TseTmc.IR.Model;
 
 namespace IranTsetmc
 {
@@ -20,6 +22,24 @@ namespace IranTsetmc
             string result = reader.ReadToEnd();
 
             return result;
+        }
+
+        private static string CheckSymbolNameValidityAndGetTsetmcId(string symbolName)
+        {
+            //checks
+            if (string.IsNullOrEmpty(symbolName?.Trim()))
+                throw new ArgumentException($"{nameof(symbolName)} is null or empty.", nameof(symbolName));
+
+            string tsetmcSymbolId = GetTsetmcSymbolId(symbolName);
+
+            if (string.IsNullOrEmpty(tsetmcSymbolId?.Trim()))
+                throw new Exception($"tsetmc symbol id not found.");
+            return tsetmcSymbolId;
+        }
+
+        public static string SearchShare(string symbolName)
+        {
+            throw new NotImplementedException();
         }
 
         public static string GetTsetmcSymbolId(string symbolName)
@@ -39,14 +59,7 @@ namespace IranTsetmc
 
         public static List<PersonOrg> GetPersonOrgHistory(string symbolName)
         {
-            //checks
-            if (string.IsNullOrEmpty(symbolName?.Trim()))
-                throw new ArgumentException($"{nameof(symbolName)} is null or empty.", nameof(symbolName));
-
-            string tsetmcSymbolId = GetTsetmcSymbolId(symbolName);
-
-            if (string.IsNullOrEmpty(tsetmcSymbolId?.Trim()))
-                throw new Exception($"tsetmc symbol id not found.");
+            string tsetmcSymbolId = CheckSymbolNameValidityAndGetTsetmcId(symbolName);
 
             //request url
             string url = $"http://www.tsetmc.com/tsev2/data/clienttype.aspx?i={tsetmcSymbolId}";
@@ -67,7 +80,7 @@ namespace IranTsetmc
                 int year = int.Parse(dayDataUnits[0].Substring(0, 4));
                 int month = int.Parse(dayDataUnits[0].Substring(4, 2));
                 int day = int.Parse(dayDataUnits[0].Substring(6, 2));
-                rploh.PersianDate = new DateTime(year, month, day);
+                rploh.Date = new DateTime(year, month, day);
 
                 //person/org - sell/buy - count
                 rploh.NumberOfOrgBuyers = long.Parse(dayDataUnits[1]);
@@ -90,23 +103,42 @@ namespace IranTsetmc
                 personOrgHistory.Add(rploh);
             }
 
-            return CleanPersonOrgHistory(personOrgHistory);
+            return personOrgHistory.CleanPersonOrgHistory();
         }
 
-        private static List<PersonOrg> CleanPersonOrgHistory(List<PersonOrg> personOrgHistory)
-        {
-            List<PersonOrg> cleanHistory = new();
-            foreach (var historyItem in personOrgHistory)
-            {
-                bool thisDateExists = false;
-                foreach (var cleanHistoryItem in cleanHistory)
-                    if (cleanHistoryItem.PersianDate.Date == historyItem.PersianDate.Date)
-                    { thisDateExists = true; break; }
 
-                if (!thisDateExists)
-                    cleanHistory.Add(historyItem);
-            }
-            return cleanHistory;
+
+        public static ShareIdInfo GetShareIdInfo(string symbolName)
+        {
+            string tsetmcSymbolId = CheckSymbolNameValidityAndGetTsetmcId(symbolName);
+            string url = $@"http://tsetmc.ir/Loader.aspx?Partree=15131M&i={tsetmcSymbolId}";
+
+            string html = GetRequestResult(url);
+            HtmlDocument doc = new();
+            doc.LoadHtml(html);
+            var items = doc.DocumentNode
+                .SelectSingleNode("/html/body/div[4]/form/span/div/div[2]/table/tbody")
+                .ChildNodes.Where(n => n.Name != "#text")
+                .Select(n => n.ChildNodes.Where(cn => cn.Name != "#text").ToList()[1].InnerText.Trim()).ToArray();
+            List<HtmlNode> myNodes = new();
+
+            return new ShareIdInfo
+            {
+                SymbolCode12Digit = items[0],
+                SymbolCode5Digit = items[1],
+                LatinNameOfTheCompany = items[2],
+                CompanyCode4Digit = items[3],
+                CompanyName = items[4],
+                PersianSymbol = items[5],
+                PersianSymbol30Digit = items[6],
+                CompanyCode12Digit = items[7],
+                Bazaar = items[8],
+                BoardCode = items[9],
+                IndustryGroupCode = items[10],
+                IndustryGroup = items[11],
+                IndustrySubGroupCode = items[12],
+                IndustrySubGroup = items[13]
+            };
         }
     }
 }
