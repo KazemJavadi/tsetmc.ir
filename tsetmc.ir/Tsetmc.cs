@@ -98,7 +98,7 @@ namespace IranTsetmc
             return shareIdInfoItems.ToShareIdInfo();
         }
 
-        public static string GetHoldersInfo(string symbolName)
+        public static string GetShareHoldersInfo(string symbolName)
         {
             ShareIdInfo shareIdInfo = GetShareIdInfo(symbolName);
             string url = $@"http://tsetmc.ir/Loader.aspx?Partree=15131T&c={shareIdInfo.CompanyCode12Digit}";
@@ -108,7 +108,26 @@ namespace IranTsetmc
             var shareIdInfoItems = doc.DocumentNode
             .SelectSingleNode("/html/body/div[4]/form/span/div/div[2]/table/tbody")
             .ChildNodes.Where(n => n.Name != "#text")
-            .Select(n => n.ChildNodes.Where(cn => cn.Name != "#text").ToList()[1].InnerText.Trim()).ToArray();
+            //.Select(n => n.ChildNodes.Where(cn => cn.Name != "#text"))
+            .Select(n =>
+            {
+                int holderCode = int.Parse(n.Attributes.Single(a => a.Name == "onclick").Value
+                .Replace("ii.ShowShareHolder('", "").Replace("')","").Split(',')[0]);
+                var childNodes = n.ChildNodes.Where(cn => cn.Name != "#text");
+
+                var childNodesList = childNodes.ToList();
+                return new ShareHolderInfo
+                {
+                    Holder = new() { Name = childNodesList[0].InnerText, Code = holderCode },
+                    NumberOfOwnedShares = long.Parse(childNodesList[1].ChildNodes[0].Attributes.Single(a => a.Name == "title").Value.Replace(",", "").Replace(" ", "")),
+                    PercentageOfOwnedShares = double.Parse(childNodesList[2].InnerText),
+                    ChangeOfOwnership = long.Parse((childNodesList[3].InnerHtml.Contains("div") ?
+                 childNodesList[3].ChildNodes[0].Attributes.Single(a => a.Name == "title").Value :
+                 childNodesList[3].InnerText).Replace(",", "").Replace(" ", ""))
+                };
+
+            });
+
             throw new NotImplementedException();
         }
     }
