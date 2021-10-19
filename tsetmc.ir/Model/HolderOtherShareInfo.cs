@@ -11,7 +11,7 @@ namespace IranTsetmc.Model
         /// <summary>
         /// مشخصات سهم
         /// </summary>
-        ShareIdInfo ShareInfo { get; set; }
+        public ShareIdInfo ShareInfo { get; set; }
         /// <summary>
         /// شمار سهم هایی که دارد
         /// </summary>

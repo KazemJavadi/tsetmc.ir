@@ -13,7 +13,7 @@ namespace IranTsetmc.Model
         public long NumberOfOwnedShares { get; set; }
         public double PercentageOfOwnedShares { get; set; }
         public long ChangeOfOwnership { get; set; }
-        public List<HolderNumberOfShareHistoryItem> NumberOfShareHistory { get; set; }
-        public List<HolderOtherShareInfo> OtherSharesInfo { get; set; }
+        public HolderNumberOfShareHistoryItem[] NumberOfShareHistory { get; set; }
+        public HolderOtherShareInfo[] OtherSharesInfo { get; set; }
     }
 }

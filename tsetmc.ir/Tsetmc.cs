@@ -86,6 +86,11 @@ namespace IranTsetmc
         public static ShareIdInfo GetShareIdInfo(string symbolName)
         {
             string tsetmcSymbolId = CheckSymbolNameValidityAndGetTsetmcId(symbolName);
+            return GetShareIdInfoByTsetmcSymbolId(tsetmcSymbolId);
+        }
+
+        private static ShareIdInfo GetShareIdInfoByTsetmcSymbolId(string tsetmcSymbolId)
+        {
             string url = $@"http://tsetmc.ir/Loader.aspx?Partree=15131M&i={tsetmcSymbolId}";
 
             string html = GetRequestResult(url);
@@ -99,7 +104,7 @@ namespace IranTsetmc
             return shareIdInfoItems.ToShareIdInfo();
         }
 
-        public static string GetShareHoldersInfo(string symbolName)
+        public static ShareHolderInfo[] GetShareHoldersInfo(string symbolName)
         {
             ShareIdInfo shareIdInfo = GetShareIdInfo(symbolName);
             string url = $@"http://tsetmc.ir/Loader.aspx?Partree=15131T&c={shareIdInfo.CompanyCode12Digit}";
@@ -109,7 +114,6 @@ namespace IranTsetmc
             var holders = doc.DocumentNode
             .SelectSingleNode("/html/body/div[4]/form/span/div/div[2]/table/tbody")
             .ChildNodes.Where(n => n.Name != "#text")
-            //.Select(n => n.ChildNodes.Where(cn => cn.Name != "#text"))
             .Select(n =>
             {
                 int holderCode = int.Parse(n.Attributes.Single(a => a.Name == "onclick").Value
@@ -120,25 +124,26 @@ namespace IranTsetmc
                 ShareHolderInfo shareHolderInfo = new()
                 {
                     Holder = new() { Name = childNodesList[0].InnerText, Code = holderCode },
-                    NumberOfOwnedShares = long.Parse(childNodesList[1].ChildNodes[0].Attributes.Single(a => a.Name == "title").Value.Replace(",", "").Replace(" ", "")),
+
+                    NumberOfOwnedShares = long.Parse((childNodesList[1].InnerHtml.Contains("div") ? 
+                    childNodesList[1].ChildNodes[0].Attributes.Single(a => a.Name == "title").Value :
+                    childNodesList[1].InnerText).Replace(",", "").Replace(" ", "")),
+
                     PercentageOfOwnedShares = double.Parse(childNodesList[2].InnerText),
+
                     ChangeOfOwnership = long.Parse((childNodesList[3].InnerHtml.Contains("div") ?
                  childNodesList[3].ChildNodes[0].Attributes.Single(a => a.Name == "title").Value :
                  childNodesList[3].InnerText).Replace(",", "").Replace(" ", ""))
                 };
 
                 shareHolderInfo.ShareInfo = shareIdInfo;
+                var result = GetHolderOtherShares(shareHolderInfo.Holder.Code, shareHolderInfo.ShareInfo.CompanyCode12Digit);
+                shareHolderInfo.NumberOfShareHistory = result.NumberOfShareHistory;
+                shareHolderInfo.OtherSharesInfo = result.OtherSharesInfo;
                 return shareHolderInfo;
-            });
+            }).ToArray();
 
-            foreach(var holder in holders)
-            {
-                var result = GetHolderOtherShares(holder.Holder.Code, holder.ShareInfo.CompanyCode12Digit);
-                holder.NumberOfShareHistory = result.NumberOfShareHistory;
-                holder.OtherSharesInfo = result.OtherSharesInfo;
-            }
-
-            throw new NotImplementedException();
+            return holders;
         }
 
         /// <summary>
@@ -147,7 +152,7 @@ namespace IranTsetmc
         /// <param name="holderCode"></param>
         /// <param name="companyCode12Digit"></param>
         /// <returns></returns>
-        private static (HolderNumberOfShareHistoryItem[] NumberOfShareHistory, List<HolderOtherShareInfo> OtherSharesInfo) 
+        private static (HolderNumberOfShareHistoryItem[] NumberOfShareHistory, HolderOtherShareInfo[] OtherSharesInfo) 
             GetHolderOtherShares(int holderCode, string companyCode12Digit)
         {
                 string url = $"http://tsetmc.ir/tsev2/data/ShareHolder.aspx?i={holderCode}%2C{companyCode12Digit}";
@@ -156,12 +161,14 @@ namespace IranTsetmc
             string part1 = parts[0];
             string part2 = parts[1];
 
-            string[] part1Parts = part1.Split(',');
+            string[] part1Parts = part1.Split(';');
             HolderNumberOfShareHistoryItem[] shareHistory =
                 part1Parts.Select(p =>
                 {
+                    if (string.IsNullOrEmpty(p?.Trim())) return null;
+
                     string[] parts = p.Split(',');
-                    (int year, int month, int day) = Helper.SeprateDateParts(parts[1]);
+                    (int year, int month, int day) = Helper.SeprateDateParts(parts[0]);
                     return new HolderNumberOfShareHistoryItem
                     {
                         Date = new DateTime(year, month, day),
@@ -169,7 +176,22 @@ namespace IranTsetmc
                     };
                 }).ToArray();
 
-            return (shareHistory, null);
+            string[] part2Parts = part2.Split(';');
+            HolderOtherShareInfo[] holderOtherShareInfos =
+                part2Parts.Select(p =>
+                {
+                    if (string.IsNullOrEmpty(p?.Trim())) return null;
+
+                    string[] parts = p.Split(',');
+                    
+                    return new HolderOtherShareInfo
+                    {
+                       ShareInfo = GetShareIdInfoByTsetmcSymbolId(parts[0]),
+                       NumberOfOwnedShares = long.Parse(parts[2]),
+                       PercentageOfOwnedShares = double.Parse(parts[3])
+                    };
+                }).ToArray();
+            return (shareHistory, holderOtherShareInfos);
         }
     }
 }
