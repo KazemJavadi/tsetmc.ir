@@ -1,4 +1,5 @@
-﻿using IranTsetmc.Model;
+﻿using IranTsetmc.Help;
+using IranTsetmc.Model;
 using System;
 using System.Collections.Generic;
 
@@ -17,9 +18,7 @@ namespace IranTsetmc.Extensions
                 PersonOrg rploh = new();
                 //date
                 //date
-                int year = int.Parse(dayDataUnits[0].Substring(0, 4));
-                int month = int.Parse(dayDataUnits[0].Substring(4, 2));
-                int day = int.Parse(dayDataUnits[0].Substring(6, 2));
+                var (year, month, day) = Helper.SeprateDateParts(dayDataUnits[0]);
                 rploh.Date = new DateTime(year, month, day);
 
                 //person/org - sell/buy - count

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using IranTsetmc.Help;
 
 namespace IranTsetmc
 {
@@ -146,19 +147,29 @@ namespace IranTsetmc
         /// <param name="holderCode"></param>
         /// <param name="companyCode12Digit"></param>
         /// <returns></returns>
-        private static (List<HolderNumberOfShareHistoryItem> NumberOfShareHistory, List<HolderOtherShareInfo> OtherSharesInfo) 
+        private static (HolderNumberOfShareHistoryItem[] NumberOfShareHistory, List<HolderOtherShareInfo> OtherSharesInfo) 
             GetHolderOtherShares(int holderCode, string companyCode12Digit)
         {
-            try
-            {
                 string url = $"http://tsetmc.ir/tsev2/data/ShareHolder.aspx?i={holderCode}%2C{companyCode12Digit}";
                 string result = GetRequestResult(url);
-            }
-            catch(WebException exc)
-            {
-                var x = exc;
-            }
-            return (null, null);
+            string[] parts = result.Split("#");
+            string part1 = parts[0];
+            string part2 = parts[1];
+
+            string[] part1Parts = part1.Split(',');
+            HolderNumberOfShareHistoryItem[] shareHistory =
+                part1Parts.Select(p =>
+                {
+                    string[] parts = p.Split(',');
+                    (int year, int month, int day) = Helper.SeprateDateParts(parts[1]);
+                    return new HolderNumberOfShareHistoryItem
+                    {
+                        Date = new DateTime(year, month, day),
+                        NumberOfShares = long.Parse(parts[0])
+                    };
+                }).ToArray();
+
+            return (shareHistory, null);
         }
     }
 }
