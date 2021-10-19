@@ -105,7 +105,7 @@ namespace IranTsetmc
             string html = GetRequestResult(url);
             HtmlDocument doc = new();
             doc.LoadHtml(html);
-            var shareIdInfoItems = doc.DocumentNode
+            var holders = doc.DocumentNode
             .SelectSingleNode("/html/body/div[4]/form/span/div/div[2]/table/tbody")
             .ChildNodes.Where(n => n.Name != "#text")
             //.Select(n => n.ChildNodes.Where(cn => cn.Name != "#text"))
@@ -116,7 +116,7 @@ namespace IranTsetmc
                 var childNodes = n.ChildNodes.Where(cn => cn.Name != "#text");
 
                 var childNodesList = childNodes.ToList();
-                return new ShareHolderInfo
+                ShareHolderInfo shareHolderInfo = new()
                 {
                     Holder = new() { Name = childNodesList[0].InnerText, Code = holderCode },
                     NumberOfOwnedShares = long.Parse(childNodesList[1].ChildNodes[0].Attributes.Single(a => a.Name == "title").Value.Replace(",", "").Replace(" ", "")),
@@ -126,9 +126,39 @@ namespace IranTsetmc
                  childNodesList[3].InnerText).Replace(",", "").Replace(" ", ""))
                 };
 
+                shareHolderInfo.ShareInfo = shareIdInfo;
+                return shareHolderInfo;
             });
 
+            foreach(var holder in holders)
+            {
+                var result = GetHolderOtherShares(holder.Holder.Code, holder.ShareInfo.CompanyCode12Digit);
+                holder.NumberOfShareHistory = result.NumberOfShareHistory;
+                holder.OtherSharesInfo = result.OtherSharesInfo;
+            }
+
             throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// تاریخچه ی شمار سهم هایی که سهام دار از این سهام دارد و اطلاعات سهام های دیگری که دارد را برمی گرداند
+        /// </summary>
+        /// <param name="holderCode"></param>
+        /// <param name="companyCode12Digit"></param>
+        /// <returns></returns>
+        private static (List<HolderNumberOfShareHistoryItem> NumberOfShareHistory, List<HolderOtherShareInfo> OtherSharesInfo) 
+            GetHolderOtherShares(int holderCode, string companyCode12Digit)
+        {
+            try
+            {
+                string url = $"http://tsetmc.ir/tsev2/data/ShareHolder.aspx?i={holderCode}%2C{companyCode12Digit}";
+                string result = GetRequestResult(url);
+            }
+            catch(WebException exc)
+            {
+                var x = exc;
+            }
+            return (null, null);
         }
     }
 }
