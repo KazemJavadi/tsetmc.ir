@@ -1,12 +1,12 @@
 ﻿using HtmlAgilityPack;
-using IranTsetmc.Model;
 using IranTsetmc.Extensions;
+using IranTsetmc.Help;
+using IranTsetmc.Model;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
-using IranTsetmc.Help;
 
 namespace IranTsetmc
 {
@@ -117,7 +117,7 @@ namespace IranTsetmc
             .Select(n =>
             {
                 int holderCode = int.Parse(n.Attributes.Single(a => a.Name == "onclick").Value
-                .Replace("ii.ShowShareHolder('", "").Replace("')","").Split(',')[0]);
+                .Replace("ii.ShowShareHolder('", "").Replace("')", "").Split(',')[0]);
                 var childNodes = n.ChildNodes.Where(cn => cn.Name != "#text");
 
                 var childNodesList = childNodes.ToList();
@@ -125,7 +125,7 @@ namespace IranTsetmc
                 {
                     Holder = new() { Name = childNodesList[0].InnerText, Code = holderCode },
 
-                    NumberOfOwnedShares = long.Parse((childNodesList[1].InnerHtml.Contains("div") ? 
+                    NumberOfOwnedShares = long.Parse((childNodesList[1].InnerHtml.Contains("div") ?
                     childNodesList[1].ChildNodes[0].Attributes.Single(a => a.Name == "title").Value :
                     childNodesList[1].InnerText).Replace(",", "").Replace(" ", "")),
 
@@ -152,11 +152,11 @@ namespace IranTsetmc
         /// <param name="holderCode"></param>
         /// <param name="companyCode12Digit"></param>
         /// <returns></returns>
-        private static (HolderNumberOfShareHistoryItem[] NumberOfShareHistory, HolderOtherShareInfo[] OtherSharesInfo) 
+        private static (HolderNumberOfShareHistoryItem[] NumberOfShareHistory, HolderOtherShareInfo[] OtherSharesInfo)
             GetHolderOtherShares(int holderCode, string companyCode12Digit)
         {
-                string url = $"http://tsetmc.ir/tsev2/data/ShareHolder.aspx?i={holderCode}%2C{companyCode12Digit}";
-                string result = GetRequestResult(url);
+            string url = $"http://tsetmc.ir/tsev2/data/ShareHolder.aspx?i={holderCode}%2C{companyCode12Digit}";
+            string result = GetRequestResult(url);
             string[] parts = result.Split("#");
             string part1 = parts[0];
             string part2 = parts[1];
@@ -174,7 +174,7 @@ namespace IranTsetmc
                         Date = new DateTime(year, month, day),
                         NumberOfShares = long.Parse(parts[0])
                     };
-                }).ToArray();
+                }).Where(x=>x != null).ToArray();
 
             string[] part2Parts = part2.Split(';');
             HolderOtherShareInfo[] holderOtherShareInfos =
@@ -183,14 +183,14 @@ namespace IranTsetmc
                     if (string.IsNullOrEmpty(p?.Trim())) return null;
 
                     string[] parts = p.Split(',');
-                    
+
                     return new HolderOtherShareInfo
                     {
-                       ShareInfo = GetShareIdInfoByTsetmcSymbolId(parts[0]),
-                       NumberOfOwnedShares = long.Parse(parts[2]),
-                       PercentageOfOwnedShares = double.Parse(parts[3])
+                        ShareInfo = GetShareIdInfoByTsetmcSymbolId(parts[0]),
+                        NumberOfOwnedShares = long.Parse(parts[2]),
+                        PercentageOfOwnedShares = double.Parse(parts[3])
                     };
-                }).ToArray();
+                }).Where(x => x != null).ToArray();
             return (shareHistory, holderOtherShareInfos);
         }
     }
