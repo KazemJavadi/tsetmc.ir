@@ -1,4 +1,5 @@
 ﻿using IranTsetmc;
+using System;
 using static System.Console;
 
 namespace ConsoleTest
@@ -7,7 +8,7 @@ namespace ConsoleTest
     {
         static void Main(string[] args)
         {
-            var result = Tsetmc.GetShareHoldersInfo("خودرو");
+            var result = Tsetmc.GetDayTradeHistory("کیمیاتک", DateTime.Now.AddDays(-1));
             ReadLine();
         }
     }

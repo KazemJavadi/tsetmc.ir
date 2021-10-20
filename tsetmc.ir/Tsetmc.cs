@@ -1,12 +1,14 @@
 ﻿using HtmlAgilityPack;
 using IranTsetmc.Extensions;
 using IranTsetmc.Help;
+using IranTsetmc.JsonModel;
 using IranTsetmc.Model;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Text.Json;
 
 namespace IranTsetmc
 {
@@ -192,6 +194,26 @@ namespace IranTsetmc
                     };
                 }).Where(x => x != null).ToArray();
             return (shareHistory, holderOtherShareInfos);
+        }
+
+        public static JsonDayTradeHistory GetDayTradeHistory(string symbolName, DateTime date)
+        {
+            string tsetmcSymbolId = GetTsetmcSymbolId(symbolName);
+            string dateStr = Helper.CombineDateTime(date);
+            string url = $"http://cdn.tsetmc.com/api/Trade/GetTradeHistory/{tsetmcSymbolId}/{dateStr}/true";
+            string result = GetRequestResult(url);
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
+
+            var jsonDayTradeHistory = JsonSerializer.Deserialize<JsonDayTradeHistory>(result, options);
+            DayTradeHistory dayTradeHisotry = new()
+            {
+                Date = date,
+                DayHistory = jsonDayTradeHistory.tradeHistory.Select(h=> new DayTradeHistoryItem { })
+            };
+            return null;
         }
     }
 }

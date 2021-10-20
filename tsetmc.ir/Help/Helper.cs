@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace IranTsetmc.Help
 {
@@ -12,5 +13,7 @@ namespace IranTsetmc.Help
 
             return (year, month, day);
         }
+
+        public static string CombineDateTime(DateTime date) => $"{date.Year}{date.Month}{date.Day}";
     }
 }
